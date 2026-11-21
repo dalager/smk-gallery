@@ -99,5 +99,12 @@ export function createLabel(element, placements) {
     show(best?.item ?? null);
   }
 
-  return { update, show };
+  return {
+    update,
+    show,
+    /** The sculpture whose plaque is up, if any. */
+    get item() {
+      return current;
+    },
+  };
 }

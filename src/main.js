@@ -4,6 +4,8 @@ import { createSculpture } from './sculpture.js';
 import { BODY_RADIUS, createWalker } from './walk.js';
 import { createLabel } from './label.js';
 import { computeLayout, roomAt, walkableAreas } from './lib/layout.js';
+import { composeStill } from './plaque-canvas.js';
+import { saveBlob } from './recorder.js';
 import { createTourDirector, tourSettings } from './tour.js';
 
 const BASE = import.meta.env.BASE_URL;
@@ -182,6 +184,29 @@ async function start() {
     }
   }
 
+  /**
+   * Saves the 3D view as a PNG at the canvas's full resolution, with the plaque
+   * if one is up but without the other page overlays. Works while walking or on a tour, so there is no need to leave
+   * the viewer (which would bring the intro screen up) to capture it.
+   */
+  const toast = $('toast');
+  let toastTimer = 0;
+  function takeScreenshot() {
+    if (recording) return;
+    drawScene(); // the canvas is only guaranteed to hold a frame straight after rendering
+    const stamp = new Date().toISOString().slice(0, 19).replace('T', '-').replaceAll(':', '');
+    composeStill(renderer.domElement, label.item).toBlob((blob) => {
+      if (!blob) return;
+      saveBlob(blob, `smk-gallery-${stamp}.png`);
+      toast.textContent = 'Screenshot saved';
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.hidden = true;
+      }, 1500);
+    }, 'image/png');
+  }
+
   enter.addEventListener('click', () => walker.controls.lock());
   playButton.addEventListener('click', playTour);
   recordButton.addEventListener('click', recordTour);
@@ -189,6 +214,7 @@ async function start() {
     if (director.playing && !recording) stopTour();
   });
   window.addEventListener('keydown', (event) => {
+    if (event.code === 'KeyP' && !event.repeat) takeScreenshot();
     if (event.code !== 'Escape') return;
     if (recording) cancelRecording = true;
     else if (director.playing) stopTour();

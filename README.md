@@ -1,5 +1,7 @@
 # SMK sculpture gallery
 
+![The wild boar "Metalsvinet" on its plinth in the Roman room, with its plaque and the room title on the wall behind](img/metalsvinet.jpg)
+
 A virtual sculpture gallery you can walk through in the browser, built from the
 3D scans that [Statens Museum for Kunst](https://www.smk.dk/) publishes through
 [SMK Open](https://open.smk.dk/). Thirty sculptures stand in six skylit rooms;
@@ -32,8 +34,13 @@ before the viewer shows anything.
 
 ## Features
 
+![The start screen: walk, watch a drone tour or record one](img/mainscreen.png)
+
 - **First-person walking.** Mouse look and WASD, with collision against walls,
   door frames and plinths. Shift to go faster, `I` for a frame-rate readout.
+- **Screenshots.** `P` saves the current view as a PNG while you walk or during
+  a tour, with the plaque if one is showing but without the other on-page
+  overlays.
 - **Six rooms in a row**, joined by doorways on a central axis, each with its own
   wall colour and its title lettered above the door openings.
 - **Sculptures at real size**, each on a plinth sized to its base, lining the
@@ -110,6 +117,37 @@ Object numbers containing a slash, such as `KAS112/2`, are not supported yet.
 
 To find candidates, the API lists everything with a 3D file:
 `https://api.smk.dk/api/v1/art/search/?keys=*&filters=[has_3d_file:true]`
+
+## Hosting as a static website
+
+The built gallery is plain files: no server code, no database, nothing fetched
+from SMK while it runs.
+
+```bash
+npm run assets   # once, if public/models is not built yet
+npm run build    # writes the whole site to dist/
+```
+
+Upload the contents of `dist/` to any static host (GitHub Pages, Cloudflare
+Pages, Netlify, S3, a folder on your own web server). All paths are relative, so
+it works at a domain root or in a sub-folder without configuration.
+
+Things to know before you do:
+
+- **Size.** `dist/` is about 89 MB in 95 files, nearly all of it the models. The
+  largest single file is 4.8 MB, which is within the per-file limits of the
+  usual static hosts.
+- **Bandwidth.** A visitor downloads about 5 MB to start, and more only for the
+  sculptures they walk up to. Watching or recording a full tour pulls in most of
+  the 89 MB.
+- **HTTPS for recording.** Browsers only allow video encoding on secure pages, so
+  "Record tour video" needs `https://` (or `localhost`). Walking and watching
+  tours work over plain `http://` too, which is why recording fails when you open
+  the dev server from another device on the LAN.
+- **Caching.** Model file names do not change when a model is rebuilt. If you
+  rebuild a sculpture and redeploy, visitors may see the old one until their
+  cache expires, unless the host is set to revalidate `models/` and
+  `gallery.json`.
 
 ## Tech stack
 

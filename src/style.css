@@ -148,3 +148,14 @@ kbd {
 .credit a {
   color: inherit;
 }
+#toast {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  padding: 0.5rem 0.9rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: #1c1c1a;
+  background: rgba(244, 240, 230, 0.95);
+  pointer-events: none;
+}

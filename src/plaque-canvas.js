@@ -1,7 +1,7 @@
 import { plaqueText } from './label.js';
 
-// The plaque as a drawing, for videos: a recording only captures the 3D canvas,
-// so the on-page label has to be painted onto each frame. Sizes follow the
+// The plaque as a drawing, for videos and screenshots: those only capture the
+// 3D canvas, so the on-page label has to be painted onto each frame. Sizes follow the
 // page's stylesheet, scaled to the frame so the text stays readable at any
 // resolution.
 
@@ -69,6 +69,23 @@ function drawPlaque(ctx, item, alpha, frameHeight) {
     baseline += bodyLeading;
   }
   ctx.restore();
+}
+
+/**
+ * A copy of the current 3D frame with a plaque painted on, for screenshots.
+ * Call straight after rendering, while the frame is still on its canvas.
+ * @param {HTMLCanvasElement} source the WebGL canvas
+ * @param {object|null} item sculpture whose plaque is up, if any
+ * @returns {HTMLCanvasElement}
+ */
+export function composeStill(source, item) {
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width;
+  canvas.height = source.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(source, 0, 0);
+  if (item) drawPlaque(ctx, item, 1, canvas.height);
+  return canvas;
 }
 
 /**
