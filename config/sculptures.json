@@ -1,0 +1,52 @@
+{
+  "lods": [
+    { "name": "high", "triangles": null, "distance": 0, "loadWithin": 6 },
+    { "name": "mid", "triangles": 100000, "distance": 5, "loadWithin": 16 },
+    { "name": "low", "triangles": 20000, "distance": 12, "loadWithin": null }
+  ],
+  "rooms": [
+    { "id": "greek", "name": "Greek gods and athletes", "wallColor": "#2f4a4a" },
+    { "id": "hellenistic", "name": "Hellenistic drama", "wallColor": "#5a2e2a" },
+    { "id": "rome", "name": "Rome and its animals", "wallColor": "#6b5a34" },
+    { "id": "egypt", "name": "Egypt", "wallColor": "#26364f" },
+    { "id": "renaissance", "name": "Michelangelo and the Renaissance", "wallColor": "#3c3a44" },
+    { "id": "danish", "name": "Danish sculpture", "wallColor": "#40503a" }
+  ],
+  "sculptures": [
+    { "objectNumber": "KAS2128", "room": "greek", "source": "athena.stl", "up": "y" },
+    { "objectNumber": "KAS1800", "room": "greek" },
+    { "objectNumber": "KAS2100", "room": "greek" },
+    { "objectNumber": "KAS11", "room": "greek" },
+    { "objectNumber": "KAS1549", "room": "greek" },
+    { "objectNumber": "KAS493", "room": "greek" },
+
+    { "objectNumber": "KAS385", "room": "hellenistic" },
+    { "objectNumber": "KAS66", "room": "hellenistic" },
+    { "objectNumber": "KAS1312", "room": "hellenistic", "up": "z" },
+    { "objectNumber": "KAS208", "room": "hellenistic" },
+    { "objectNumber": "KAS402", "room": "hellenistic" },
+    { "objectNumber": "KAS403", "room": "hellenistic" },
+
+    { "objectNumber": "KAS65", "room": "rome" },
+    { "objectNumber": "KAS837", "room": "rome" },
+    { "objectNumber": "KAS2157", "room": "rome", "up": "z" },
+    { "objectNumber": "KAS101", "room": "rome" },
+
+    { "objectNumber": "KAS37", "room": "egypt", "rotateY": 90 },
+    { "objectNumber": "KAS2366", "room": "egypt", "rotateY": 90 },
+
+    { "objectNumber": "KAS243", "room": "renaissance" },
+    { "objectNumber": "KAS87", "room": "renaissance" },
+    { "objectNumber": "KAS115", "room": "renaissance" },
+    { "objectNumber": "KAS83", "room": "renaissance", "rotateY": 180 },
+    { "objectNumber": "KAS2232", "room": "renaissance", "rotateY": 90 },
+    { "objectNumber": "KAS82", "room": "renaissance" },
+
+    { "objectNumber": "KMS5250", "room": "danish" },
+    { "objectNumber": "KMS5032", "room": "danish" },
+    { "objectNumber": "KMS5387", "room": "danish" },
+    { "objectNumber": "KMS5808", "room": "danish" },
+    { "objectNumber": "KMS5781", "room": "danish", "up": "z", "rotateY": -90 },
+    { "objectNumber": "KMS6004", "room": "danish" }
+  ]
+}

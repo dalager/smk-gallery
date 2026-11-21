@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SMK sculpture gallery</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <div id="intro">
+      <div class="card">
+        <h1>SMK sculpture gallery</h1>
+        <p id="intro-status">Loading…</p>
+        <button id="enter" type="button" disabled>Click to walk</button>
+        <p class="keys">
+          <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look ·
+          <kbd>Shift</kbd> faster · <kbd>I</kbd> stats · <kbd>Esc</kbd> release
+        </p>
+      </div>
+    </div>
+    <div id="crosshair" hidden></div>
+    <div id="room-name"></div>
+    <aside id="label" hidden></aside>
+    <pre id="stats" hidden></pre>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

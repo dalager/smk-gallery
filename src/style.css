@@ -1,0 +1,123 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #14181a;
+  color: #efe9dc;
+}
+#scene {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+#intro {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(14, 18, 20, 0.55);
+  backdrop-filter: blur(3px);
+}
+#intro[hidden] {
+  display: none;
+}
+.card {
+  text-align: center;
+  padding: 2rem 2.5rem;
+  max-width: 30rem;
+}
+.card h1 {
+  margin: 0 0 0.5rem;
+  font-weight: 400;
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+}
+.card button {
+  margin: 1rem 0;
+  padding: 0.7rem 1.6rem;
+  font: inherit;
+  font-size: 1.05rem;
+  color: #14181a;
+  background: #efe9dc;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.card button:disabled {
+  opacity: 0.4;
+  cursor: progress;
+}
+.keys {
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+  opacity: 0.75;
+}
+kbd {
+  display: inline-block;
+  margin: 0 1px;
+  padding: 0 0.35em;
+  border: 1px solid rgba(239, 233, 220, 0.5);
+  border-radius: 3px;
+  font-family: inherit;
+}
+#crosshair {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+#label {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 1.5rem;
+  max-width: 22rem;
+  padding: 1rem 1.25rem;
+  background: rgba(244, 240, 230, 0.95);
+  color: #1c1c1a;
+  border-left: 3px solid #1c1c1a;
+}
+#label h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+#label p {
+  margin: 0.15rem 0;
+  font-family: system-ui, sans-serif;
+  font-size: 0.8rem;
+}
+#label a {
+  color: inherit;
+}
+#stats {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.75rem;
+  margin: 0;
+  font: 12px/1.4 ui-monospace, monospace;
+  color: #cfe;
+  text-align: right;
+  pointer-events: none;
+}
+#room-name {
+  position: fixed;
+  top: 0.9rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(239, 233, 220, 0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
