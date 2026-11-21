@@ -2,16 +2,22 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PLAN } from './lib/layout.js';
 import { buildSkylights } from './skylight.js';
+import { createPlankFloor, createPlasterWall, TILE } from './textures.js';
 
-const FLOOR_COLOR = 0x8a8478;
 const REVEAL_COLOR = 0xcfcabd;
 const PLINTH_COLOR = 0xd9d5cb;
 // Daylight from the roof lantern: steeply from above, leaning slightly towards
 // the entrance so both rows of sculptures are modelled the same way.
 const KEY_OFFSET = new THREE.Vector3(0, 11, 3.5);
 
+/** A wall plane whose texture coordinates are in real units, so plaster looks the same on every panel. */
 function wallPanel(width, height, material) {
-  const panel = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+  const geometry = new THREE.PlaneGeometry(width, height);
+  const uv = geometry.attributes.uv;
+  for (let i = 0; i < uv.count; i++) {
+    uv.setXY(i, (uv.getX(i) * width) / TILE.wall, (uv.getY(i) * height) / TILE.wall);
+  }
+  const panel = new THREE.Mesh(geometry, material);
   panel.receiveShadow = true;
   return panel;
 }
@@ -68,9 +74,14 @@ export function buildGallery(scene, renderer, layout) {
   const length = first.maxZ - last.minZ;
   const midZ = (first.maxZ + last.minZ) / 2;
 
+  // Boards run the length of the enfilade, drawing the eye from room to room.
+  const planks = createPlankFloor(renderer.capabilities.getMaxAnisotropy());
+  for (const texture of Object.values(planks)) {
+    texture.repeat.set(roomWidth / TILE.floor.width, length / TILE.floor.length);
+  }
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(roomWidth, length),
-    new THREE.MeshStandardMaterial({ color: FLOOR_COLOR, roughness: 0.7 }),
+    new THREE.MeshStandardMaterial({ ...planks, bumpScale: 1.5, roughness: 1 }),
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.z = midZ;
@@ -79,9 +90,15 @@ export function buildGallery(scene, renderer, layout) {
 
   buildSkylights(scene, layout);
 
+  const plaster = createPlasterWall();
   const reveal = new THREE.MeshStandardMaterial({ color: REVEAL_COLOR, roughness: 0.9 });
   for (const room of layout.rooms) {
-    const material = new THREE.MeshStandardMaterial({ color: room.wallColor, roughness: 0.95 });
+    const material = new THREE.MeshStandardMaterial({
+      ...plaster,
+      color: room.wallColor,
+      bumpScale: 0.45,
+      roughness: 0.95,
+    });
     for (const side of [-1, 1]) {
       const wall = wallPanel(roomDepth, roomHeight, material);
       wall.position.set((side * roomWidth) / 2, roomHeight / 2, room.centerZ);
