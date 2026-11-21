@@ -29,25 +29,35 @@ function materialFor(item) {
  *
  * @param {object} item entry from gallery.json
  * @param {string} baseUrl prefix for the item's model paths
- * @returns {{ object: THREE.LOD, ready: Promise<void>, update: (distance: number) => void }}
+ * @returns {{
+ *   object: THREE.LOD, ready: Promise<void>, update: (distance: number) => void,
+ *   setDetailScale: (scale: number) => void, settled: () => Promise<unknown>,
+ * }}
  */
 export function createSculpture(item, baseUrl) {
   const lod = new THREE.LOD();
   lod.name = item.objectNumber;
   const material = materialFor(item);
   const requested = new Set();
+  const inFlight = new Set();
+  let detailScale = 1;
 
   function load(level) {
     requested.add(level.name);
-    return loader.loadAsync(baseUrl + level.file).then((gltf) => {
+    const loading = loader.loadAsync(baseUrl + level.file).then((gltf) => {
       gltf.scene.traverse((node) => {
         if (!node.isMesh) return;
         node.material = material;
         node.castShadow = true;
         node.receiveShadow = true;
       });
-      lod.addLevel(gltf.scene, level.distance);
+      gltf.scene.userData.baseDistance = level.distance;
+      lod.addLevel(gltf.scene, level.distance * detailScale);
     });
+    inFlight.add(loading);
+    const done = () => inFlight.delete(loading);
+    loading.then(done, done);
+    return loading;
   }
 
   const eager = item.lods.filter((level) => level.loadWithin == null);
@@ -55,7 +65,7 @@ export function createSculpture(item, baseUrl) {
 
   function update(distance) {
     for (const level of item.lods) {
-      if (requested.has(level.name) || distance > level.loadWithin) continue;
+      if (requested.has(level.name) || distance > level.loadWithin * detailScale) continue;
       load(level).catch((err) => {
         console.error(`Failed to load ${level.file}`, err);
         requested.delete(level.name); // try again next time the visitor comes close
@@ -63,5 +73,14 @@ export function createSculpture(item, baseUrl) {
     }
   }
 
-  return { object: lod, ready, update };
+  /** Stretch every detail distance, e.g. 2.5 keeps full detail 2.5 times further away. */
+  function setDetailScale(scale) {
+    detailScale = scale;
+    for (const level of lod.levels) level.distance = level.object.userData.baseDistance * scale;
+  }
+
+  /** Resolves when no model file is still downloading. A recording waits on this before each frame. */
+  const settled = () => Promise.allSettled([...inFlight]);
+
+  return { object: lod, ready, update, setDetailScale, settled };
 }

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PLAN } from './lib/layout.js';
+import { buildSignage } from './signage.js';
 import { buildSkylights } from './skylight.js';
 import { createPlankFloor, createPlasterWall, TILE } from './textures.js';
 
@@ -89,6 +90,7 @@ export function buildGallery(scene, renderer, layout) {
   scene.add(floor);
 
   buildSkylights(scene, layout);
+  buildSignage(scene, layout, renderer.capabilities.getMaxAnisotropy());
 
   const plaster = createPlasterWall();
   const reveal = new THREE.MeshStandardMaterial({ color: REVEAL_COLOR, roughness: 0.9 });

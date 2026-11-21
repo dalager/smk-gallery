@@ -5,12 +5,12 @@
     { "name": "low", "triangles": 20000, "distance": 12, "loadWithin": null }
   ],
   "rooms": [
-    { "id": "greek", "name": "Greek gods and athletes", "wallColor": "#2f4a4a" },
-    { "id": "hellenistic", "name": "Hellenistic drama", "wallColor": "#5a2e2a" },
-    { "id": "rome", "name": "Rome and its animals", "wallColor": "#6b5a34" },
-    { "id": "egypt", "name": "Egypt", "wallColor": "#26364f" },
-    { "id": "renaissance", "name": "Michelangelo and the Renaissance", "wallColor": "#3c3a44" },
-    { "id": "danish", "name": "Danish sculpture", "wallColor": "#40503a" }
+    { "id": "greek", "name": "Græske guder og atleter", "wallColor": "#2f4a4a" },
+    { "id": "hellenistic", "name": "Hellenistisk drama", "wallColor": "#5a2e2a" },
+    { "id": "rome", "name": "Romerne og deres dyr", "wallColor": "#6b5a34" },
+    { "id": "egypt", "name": "Egypten", "wallColor": "#26364f" },
+    { "id": "renaissance", "name": "Michelangelo og renæssancen", "wallColor": "#3c3a44" },
+    { "id": "danish", "name": "Dansk skulptur", "wallColor": "#40503a" }
   ],
   "sculptures": [
     { "objectNumber": "KAS2128", "room": "greek", "source": "athena.stl", "up": "y" },

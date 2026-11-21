@@ -1,16 +1,6 @@
 const SHOW_WITHIN = 5; // metres
 const MIN_ALIGNMENT = Math.cos((28 * Math.PI) / 180); // within 28 degrees of the view centre
 
-const MATERIAL_NAMES = {
-  Gips: 'Plaster',
-  Marmor: 'Marble',
-  Bronze: 'Bronze',
-  Sandsten: 'Sandstone',
-  Diorit: 'diorite',
-  Træ: 'wood',
-};
-const english = (name) => MATERIAL_NAMES[name] ?? name;
-
 function line(text) {
   const p = document.createElement('p');
   p.textContent = text;
@@ -19,44 +9,57 @@ function line(text) {
 
 function originalLine(original) {
   if (!original || !(original.technique || original.owner)) return null;
-  const technique = original.technique ? english(original.technique).toLowerCase() : null;
+  const technique = original.technique ? original.technique.toLowerCase() : null;
   return `Original: ${[technique, original.owner].filter(Boolean).join(', ')}`;
 }
 
-/** Plaster with a known original elsewhere is a cast; otherwise it is the artist's own plaster. */
+/**
+ * Plaques are in Danish, like the catalogue data they are built from.
+ * Plaster with a known original elsewhere is a cast; otherwise it is the artist's own plaster.
+ */
 function materialLine(item) {
   const material = item.materials[0];
   if (!material) return null;
-  return material === 'Gips' && item.original ? 'Plaster cast' : english(material);
+  return material === 'Gips' && item.original ? 'Gipsafstøbning' : material;
+}
+
+/**
+ * The words on a plaque, shared by the on-page label and the one drawn into videos.
+ * @returns {{ title: string, facts: string[], objectNumber: string, credit: string, url: string|null }}
+ */
+export function plaqueText(item) {
+  return {
+    title: item.title,
+    facts: [
+      item.artists.join(', '),
+      [materialLine(item), item.heightCm ? `${item.heightCm} cm` : null].filter(Boolean).join(' · '),
+      originalLine(item.original),
+    ].filter(Boolean),
+    objectNumber: item.objectNumber,
+    credit: ` · SMK Open${item.publicDomain ? ' · Public domain' : ''}`,
+    url: /^https:\/\//.test(item.url ?? '') ? item.url : null,
+  };
 }
 
 function render(element, item) {
+  const text = plaqueText(item);
   const title = document.createElement('h2');
-  title.textContent = item.title;
-
-  const facts = [
-    item.artists.join(', '),
-    [materialLine(item), item.heightCm ? `${item.heightCm} cm` : null]
-      .filter(Boolean)
-      .join(' · '),
-    originalLine(item.original),
-  ].filter(Boolean);
+  title.textContent = text.title;
 
   const source = document.createElement('p');
-  const safeUrl = /^https:\/\//.test(item.url ?? '') ? item.url : null;
-  if (safeUrl) {
+  if (text.url) {
     const link = document.createElement('a');
-    link.href = safeUrl;
+    link.href = text.url;
     link.target = '_blank';
     link.rel = 'noopener';
-    link.textContent = item.objectNumber;
+    link.textContent = text.objectNumber;
     source.append(link);
   } else {
-    source.append(item.objectNumber);
+    source.append(text.objectNumber);
   }
-  source.append(` · SMK Open${item.publicDomain ? ' · Public domain' : ''}`);
+  source.append(text.credit);
 
-  element.replaceChildren(title, ...facts.map(line), source);
+  element.replaceChildren(title, ...text.facts.map(line), source);
 }
 
 /**
@@ -66,7 +69,16 @@ function render(element, item) {
 export function createLabel(element, placements) {
   let current = null;
 
+  /** Puts up the plaque for a sculpture, or takes it down with null. */
+  function show(item) {
+    if (item === current) return;
+    current = item;
+    element.hidden = !item;
+    if (item) render(element, item);
+  }
+
   /**
+   * Picks the plaque from where the visitor stands and looks.
    * @param {{x:number,z:number}} position visitor position
    * @param {{x:number,z:number}} forward unit view direction on the floor plane
    */
@@ -84,11 +96,8 @@ export function createLabel(element, placements) {
         bestAlignment = alignment;
       }
     }
-    if (best === current) return;
-    current = best;
-    element.hidden = !best;
-    if (best) render(element, best.item);
+    show(best?.item ?? null);
   }
 
-  return { update };
+  return { update, show };
 }

@@ -121,3 +121,30 @@ kbd {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   pointer-events: none;
 }
+.tour-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+}
+.card select,
+.card button.secondary {
+  margin: 0 0 1rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.9rem;
+  color: #efe9dc;
+  background: transparent;
+  border: 1px solid rgba(239, 233, 220, 0.6);
+}
+.card select {
+  font-family: inherit;
+  background: #1b2022;
+}
+.credit {
+  margin: 0 0 1rem;
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+.credit a {
+  color: inherit;
+}

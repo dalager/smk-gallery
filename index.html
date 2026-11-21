@@ -11,11 +11,23 @@
     <div id="intro">
       <div class="card">
         <h1>SMK sculpture gallery</h1>
+        <p class="credit">
+          Experiment by Christian Dalager on top of
+          <a href="https://open.smk.dk/" target="_blank" rel="noopener">SMK Open</a>
+        </p>
         <p id="intro-status">Loading…</p>
         <button id="enter" type="button" disabled>Click to walk</button>
+        <div class="tour-actions">
+          <select id="tour-route" aria-label="Tour route">
+            <option value="grand">Grand tour · 92 s</option>
+            <option value="quick">Quick tour · 45 s</option>
+          </select>
+          <button id="tour-play" type="button" class="secondary" disabled>Watch drone tour</button>
+          <button id="tour-record" type="button" class="secondary" disabled>Record tour video</button>
+        </div>
         <p class="keys">
           <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · mouse look ·
-          <kbd>Shift</kbd> faster · <kbd>I</kbd> stats · <kbd>Esc</kbd> release
+          <kbd>Shift</kbd> faster · <kbd>I</kbd> stats · <kbd>Esc</kbd> release or stop the tour
         </p>
       </div>
     </div>

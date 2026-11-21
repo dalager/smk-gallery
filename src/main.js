@@ -4,6 +4,7 @@ import { createSculpture } from './sculpture.js';
 import { BODY_RADIUS, createWalker } from './walk.js';
 import { createLabel } from './label.js';
 import { computeLayout, roomAt, walkableAreas } from './lib/layout.js';
+import { createTourDirector, tourSettings } from './tour.js';
 
 const BASE = import.meta.env.BASE_URL;
 const $ = (id) => document.getElementById(id);
@@ -14,7 +15,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+const EXPOSURE = 1.05;
+renderer.toneMappingExposure = EXPOSURE;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.05, 150);
@@ -84,31 +86,21 @@ async function start() {
 
   const intro = $('intro');
   const enter = $('enter');
+  const playButton = $('tour-play');
+  const recordButton = $('tour-record');
   const status = $('intro-status');
   const roomName = $('room-name');
-  enter.addEventListener('click', () => walker.controls.lock());
-  walker.controls.addEventListener('lock', () => {
-    intro.hidden = true;
-    $('crosshair').hidden = false;
-  });
-  walker.controls.addEventListener('unlock', () => {
-    intro.hidden = false;
-    $('crosshair').hidden = true;
+  const settings = tourSettings(location.search);
+  const routeSelect = $('tour-route');
+  routeSelect.value = settings.route;
+  routeSelect.addEventListener('change', () => {
+    settings.route = routeSelect.value;
   });
 
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
+  /** Everything that depends on where the camera is, then the render itself. */
   let currentRoom = null;
   const forward = new THREE.Vector3();
-  const clock = new THREE.Clock();
-  renderer.setAnimationLoop(() => {
-    const dt = Math.min(clock.getDelta(), 0.1);
-    walker.update(dt);
-
+  function drawScene() {
     const room = roomAt(layout, camera.position.z);
     if (room !== currentRoom) {
       currentRoom = room;
@@ -120,12 +112,104 @@ async function start() {
         Math.hypot(camera.position.x - placement.x, camera.position.z - placement.z),
       );
     }
-    camera.getWorldDirection(forward);
-    const flat = Math.hypot(forward.x, forward.z) || 1;
-    label.update(camera.position, { x: forward.x / flat, z: forward.z / flat });
+    if (director.playing) {
+      label.show(director.focus); // on a tour the route decides which plaque is up
+    } else {
+      camera.getWorldDirection(forward);
+      const flat = Math.hypot(forward.x, forward.z) || 1;
+      label.update(camera.position, { x: forward.x / flat, z: forward.z / flat });
+    }
     renderer.render(scene, camera);
-    tickStats();
+  }
+
+  const director = createTourDirector({
+    camera,
+    renderer,
+    layout,
+    pieces,
+    drawScene,
+    exposure: EXPOSURE,
   });
+  const clock = new THREE.Clock();
+  function loop() {
+    const dt = Math.min(clock.getDelta(), 0.1);
+    if (director.playing) {
+      if (!director.tick()) stopTour();
+    } else {
+      walker.update(dt);
+    }
+    drawScene();
+    tickStats();
+  }
+
+  function playTour() {
+    intro.hidden = true;
+    director.play(settings);
+  }
+  function stopTour() {
+    director.stop();
+    intro.hidden = false;
+  }
+
+  let recording = false;
+  let cancelRecording = false;
+  async function recordTour() {
+    if (recording) return;
+    recording = true;
+    cancelRecording = false;
+    for (const button of [enter, playButton, recordButton]) button.disabled = true;
+    renderer.setAnimationLoop(null);
+    const { width, height, fps } = settings;
+    try {
+      const result = await director.record({
+        ...settings,
+        isCancelled: () => cancelRecording,
+        onProgress: (fraction) => {
+          status.textContent = `Recording ${width}×${height} at ${fps} fps: ${Math.round(fraction * 100)}% (Esc to cancel)`;
+        },
+      });
+      status.textContent = result
+        ? `Saved ${(result.blob.size / 1e6).toFixed(1)} MB video (${result.frames} frames, ${result.codec})`
+        : 'Recording cancelled';
+    } catch (err) {
+      console.error(err);
+      status.textContent = `Recording failed: ${err.message}`;
+    } finally {
+      recording = false;
+      for (const button of [enter, playButton, recordButton]) button.disabled = false;
+      clock.getDelta();
+      renderer.setAnimationLoop(loop);
+    }
+  }
+
+  enter.addEventListener('click', () => walker.controls.lock());
+  playButton.addEventListener('click', playTour);
+  recordButton.addEventListener('click', recordTour);
+  renderer.domElement.addEventListener('click', () => {
+    if (director.playing && !recording) stopTour();
+  });
+  window.addEventListener('keydown', (event) => {
+    if (event.code !== 'Escape') return;
+    if (recording) cancelRecording = true;
+    else if (director.playing) stopTour();
+  });
+  walker.controls.addEventListener('lock', () => {
+    intro.hidden = true;
+    $('crosshair').hidden = false;
+  });
+  walker.controls.addEventListener('unlock', () => {
+    intro.hidden = false;
+    $('crosshair').hidden = true;
+  });
+
+  window.addEventListener('resize', () => {
+    if (recording) return; // the canvas is pinned to the video size until the recording ends
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  renderer.setAnimationLoop(loop);
 
   status.textContent = `Loading ${pieces.length} sculptures…`;
   const results = await Promise.allSettled(pieces.map((p) => p.sculpture.ready));
@@ -134,7 +218,10 @@ async function start() {
   status.textContent = failed.length
     ? `${pieces.length - failed.length} of ${pieces.length} sculptures loaded`
     : `${pieces.length} sculptures in ${layout.rooms.length} rooms`;
-  enter.disabled = false;
+  for (const button of [enter, playButton, recordButton]) button.disabled = false;
+
+  if (settings.autoRecord) recordTour();
+  else if (settings.autoPlay) playTour();
 }
 
 start().catch((err) => {
