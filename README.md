@@ -70,6 +70,11 @@ is complete.
   MP4, plaques included. Because each frame is drawn for its exact timestamp, the
   result is smooth regardless of how fast the machine is.
 
+[![A frame from the quick tour: the Discus Thrower with its plaque, and the doorway into the next room](img/quick-tour-poster.jpg)](img/quick-tour.mp4)
+
+The quick tour as the viewer recorded it: [watch the video](img/quick-tour.mp4)
+(45 s, 1080p, 8 MB).
+
 ### Address options
 
 | Address | Effect |
