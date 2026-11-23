@@ -118,6 +118,10 @@ Object numbers containing a slash, such as `KAS112/2`, are not supported yet.
 To find candidates, the API lists everything with a 3D file:
 `https://api.smk.dk/api/v1/art/search/?keys=*&filters=[has_3d_file:true]`
 
+The agent skills in [`skills/`](skills/README.md) wrap this: one searches SMK's
+3D-scanned sculptures, the other walks through designing rooms and checks a config
+against the API and the floor plan before you build it.
+
 ## Hosting as a static website
 
 The built gallery is plain files: no server code, no database, nothing fetched
