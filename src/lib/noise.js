@@ -24,26 +24,43 @@ const smooth = (t) => t * t * (3 - 2 * t);
  * @returns {Float32Array} size * size values in [0, 1], row by row
  */
 export function tileableNoise(size, options = {}) {
-  const { seed = 1, baseCells = 4, octaves = 4, falloff = 0.5 } = options;
-  const out = new Float32Array(size * size);
+  const { baseCells = 4, ...rest } = options;
+  return valueNoise(size, size, { ...rest, cellsX: baseCells, cellsY: baseCells });
+}
+
+/**
+ * Fractal value noise on a rectangle, with its own number of cells along each
+ * axis, so features can be stretched (wear that follows the grain of the boards).
+ * Also wraps at the edges, like `tileableNoise`.
+ *
+ * @param {number} width
+ * @param {number} height
+ * @param {{ seed?: number, cellsX?: number, cellsY?: number, octaves?: number, falloff?: number }} [options]
+ *   `cellsX` and `cellsY` count the coarsest octave's cells across and down.
+ * @returns {Float32Array} width * height values in [0, 1], row by row
+ */
+export function valueNoise(width, height, options = {}) {
+  const { seed = 1, cellsX = 4, cellsY = 4, octaves = 4, falloff = 0.5 } = options;
+  const out = new Float32Array(width * height);
   const random = seededRandom(seed);
   let amplitude = 1;
   let total = 0;
   for (let o = 0; o < octaves; o++) {
-    const cells = baseCells * 2 ** o;
-    const lattice = Float32Array.from({ length: cells * cells }, random);
-    const at = (cx, cy) => lattice[(cy % cells) * cells + (cx % cells)];
-    for (let y = 0; y < size; y++) {
-      const fy = (y / size) * cells;
+    const cx = Math.max(1, Math.round(cellsX * 2 ** o));
+    const cy = Math.max(1, Math.round(cellsY * 2 ** o));
+    const lattice = Float32Array.from({ length: cx * cy }, random);
+    const at = (x, y) => lattice[(y % cy) * cx + (x % cx)];
+    for (let y = 0; y < height; y++) {
+      const fy = (y / height) * cy;
       const y0 = Math.floor(fy);
       const ty = smooth(fy - y0);
-      for (let x = 0; x < size; x++) {
-        const fx = (x / size) * cells;
+      for (let x = 0; x < width; x++) {
+        const fx = (x / width) * cx;
         const x0 = Math.floor(fx);
         const tx = smooth(fx - x0);
         const top = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * tx;
         const bottom = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * tx;
-        out[y * size + x] += (top + (bottom - top) * ty) * amplitude;
+        out[y * width + x] += (top + (bottom - top) * ty) * amplitude;
       }
     }
     total += amplitude;

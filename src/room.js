@@ -3,6 +3,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { PLAN } from './lib/layout.js';
 import { buildSignage } from './signage.js';
 import { buildSkylights } from './skylight.js';
+import { createFloorMaterial } from './floor-material.js';
 import { createPlankFloor, createPlasterWall, TILE } from './textures.js';
 
 const REVEAL_COLOR = 0xcfcabd;
@@ -76,13 +77,11 @@ export function buildGallery(scene, renderer, layout) {
   const midZ = (first.maxZ + last.minZ) / 2;
 
   // Boards run the length of the enfilade, drawing the eye from room to room.
+  // The material places the boards and the wear from world position, not UVs.
   const planks = createPlankFloor(renderer.capabilities.getMaxAnisotropy());
-  for (const texture of Object.values(planks)) {
-    texture.repeat.set(roomWidth / TILE.floor.width, length / TILE.floor.length);
-  }
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(roomWidth, length),
-    new THREE.MeshStandardMaterial({ ...planks, bumpScale: 1.5, roughness: 1 }),
+    createFloorMaterial(planks, TILE.floor, layout),
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.z = midZ;

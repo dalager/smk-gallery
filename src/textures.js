@@ -6,7 +6,7 @@ import { seededRandom, tileableNoise } from './lib/noise.js';
 
 /** Real-world size of one repeat of each texture, in metres. */
 export const TILE = {
-  floor: { width: 1.6, length: 3.2 }, // eight 20 cm planks across
+  floor: { width: 1.6, length: 3.2, strips: 8 }, // eight 20 cm planks across
   wall: 3,
 };
 
@@ -30,8 +30,8 @@ function repeating(canvas, colorSpace) {
 /** One board (or the part of it inside a rectangle): base tone plus long, slightly wavy grain. */
 function drawBoard(ctx, rect, tileHeight, seed) {
   const random = seededRandom(seed);
-  const tone = 0.84 + random() * 0.3;
-  const warmth = random() * 8 - 4;
+  const tone = 0.94 + random() * 0.1;
+  const warmth = random() * 4 - 2;
   ctx.save();
   ctx.beginPath();
   ctx.rect(rect.x, rect.y, rect.width, rect.height);
@@ -62,104 +62,122 @@ function drawBoard(ctx, rect, tileHeight, seed) {
   ctx.restore();
 }
 
-/** Runs `draw` at every tile offset that could reach into the canvas, so marks wrap seamlessly. */
-function wrapped(ctx, width, height, draw) {
-  for (const dx of [-width, 0, width]) {
-    for (const dy of [-height, 0, height]) {
-      ctx.save();
-      ctx.translate(dx, dy);
-      draw();
-      ctx.restore();
-    }
+/** Clips drawing to one strip of the tile, so marks never run across into a strip that is shown elsewhere. */
+function inStrip(ctx, x, width, height, draw) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, 0, width, height);
+  ctx.clip();
+  draw();
+  ctx.restore();
+}
+
+/** A knot: a dark core with the grain swirling round it. */
+function drawKnot(ctx, x, y, r, random) {
+  const stretch = 1.4 + random() * 1.2;
+  const knot = ctx.createRadialGradient(x, y, 0, x, y, r * stretch);
+  knot.addColorStop(0, `rgba(22, 11, 4, ${0.7 + random() * 0.25})`);
+  knot.addColorStop(0.4, 'rgba(40, 22, 9, 0.45)');
+  knot.addColorStop(1, 'rgba(40, 22, 9, 0)');
+  ctx.fillStyle = knot;
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * 1.3, r * stretch, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(30, 15, 5, 0.18)';
+  ctx.lineWidth = 0.8;
+  for (let ring = 1; ring <= 3; ring++) {
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * (1.3 + ring * 0.7), r * stretch * (1.4 + ring * 0.9), 0, 0, Math.PI * 2);
+    ctx.stroke();
   }
 }
 
 /**
- * A century of visitors: knots, dark ingrained patches, bare scuffed areas and
- * scratches on the boards, plus a map of where the finish has worn dull.
+ * Detail that belongs to the boards themselves: knots, fine speckle and the
+ * scratches of a century of shoes, plus a roughness map in which scratches
+ * have cut through the finish. Large-scale wear is not drawn here: it follows
+ * the floor plan and comes from lib/floor-wear.js.
  * @returns {HTMLCanvasElement} roughness map (three.js reads the green channel)
  */
-function wearFloor(ctx, bctx, width, height, random) {
-  // Knots.
-  for (let i = 0; i < 9; i++) {
-    const x = random() * width;
-    const y = random() * height;
-    const r = 5 + random() * 9;
-    wrapped(ctx, width, height, () => {
-      const knot = ctx.createRadialGradient(x, y, 0, x, y, r * 2.2);
-      knot.addColorStop(0, 'rgba(24, 12, 4, 0.85)');
-      knot.addColorStop(0.45, 'rgba(40, 22, 9, 0.5)');
-      knot.addColorStop(1, 'rgba(40, 22, 9, 0)');
-      ctx.fillStyle = knot;
-      ctx.beginPath();
-      ctx.ellipse(x, y, r * 1.3, r * 2.2, 0, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
+function markBoards(ctx, bctx, width, height, plankWidth, random) {
+  const rough = canvasOf(width / 2, height / 2);
+  const rctx = rough.getContext('2d');
+  const speckle = tileableNoise(512, { seed: 29, baseCells: 40, octaves: 2 });
+  const mottle = tileableNoise(512, { seed: 23, baseCells: 10, octaves: 3 });
 
-  // Grime and bare patches: stretched along the boards, as wear follows the grain.
-  const size = 512;
-  const patches = tileableNoise(size, { seed: 23, baseCells: 3, octaves: 4 });
-  const speckle = tileableNoise(size, { seed: 29, baseCells: 40, octaves: 2 });
+  // Fine speckle and soft mottling within each board.
   const image = ctx.getImageData(0, 0, width, height);
   const px = image.data;
   for (let y = 0; y < height; y++) {
-    const ny = Math.floor((y / height) * size);
+    const ny = Math.floor((y / height) * 512);
     for (let x = 0; x < width; x++) {
-      const n = ny * size + Math.floor((x / width) * size);
-      const worn = Math.max(0, patches[n] - 0.55) * 2.2; // bare, scuffed wood: paler and greyer
-      const gain = 0.68 + 0.5 * patches[n] + 0.12 * (speckle[n] - 0.5);
+      const n = ny * 512 + Math.floor((x / width) * 512);
+      const gain = 0.9 + 0.16 * mottle[n] + 0.12 * (speckle[n] - 0.5);
       const i = (y * width + x) * 4;
-      const grey = (px[i] + px[i + 1] + px[i + 2]) / 3;
-      for (let c = 0; c < 3; c++) {
-        px[i + c] = (px[i + c] + (grey * 1.25 - px[i + c]) * worn * 0.6) * gain;
-      }
+      for (let c = 0; c < 3; c++) px[i + c] *= gain;
     }
   }
   ctx.putImageData(image, 0, 0);
 
-  // Scratches, mostly along the direction people walk.
-  for (let i = 0; i < 260; i++) {
-    const x = random() * width;
-    const y = random() * height;
-    const length = 20 + random() * 150;
-    const angle = (random() - 0.5) * (random() < 0.75 ? 0.5 : Math.PI);
-    const ex = x + Math.sin(angle) * length;
-    const ey = y + Math.cos(angle) * length;
-    const light = random() < 0.7;
-    const alpha = 0.06 + random() * 0.16;
-    const lineWidth = 0.5 + random() * 1.2;
-    for (const target of [ctx, bctx]) {
-      wrapped(target, width, height, () => {
-        target.strokeStyle =
-          target === bctx
-            ? `rgba(0, 0, 0, ${alpha * 1.5})`
-            : light
-              ? `rgba(214, 190, 160, ${alpha})`
-              : `rgba(20, 10, 4, ${alpha * 1.4})`;
-        target.lineWidth = lineWidth;
-        target.beginPath();
-        target.moveTo(x, y);
-        target.lineTo(ex, ey);
-        target.stroke();
-      });
+  const roughData = new ImageData(width / 2, height / 2);
+  for (let y = 0; y < height / 2; y++) {
+    const ny = Math.floor((y / (height / 2)) * 512);
+    for (let x = 0; x < width / 2; x++) {
+      const n = ny * 512 + Math.floor((x / (width / 2)) * 512);
+      const value = 255 * (0.62 + 0.2 * mottle[n] + 0.14 * (speckle[n] - 0.5));
+      roughData.data.set([value, value, value, 255], (y * (width / 2) + x) * 4);
     }
   }
+  rctx.putImageData(roughData, 0, 0);
 
-  // Where the wood is bare the finish is gone, so those patches are dull; the rest keeps a low sheen.
-  const roughness = canvasOf(size, size);
-  const data = new ImageData(size, size);
-  for (let i = 0; i < size * size; i++) {
-    const value = 255 * Math.min(1, 0.5 + 0.55 * patches[i] + 0.15 * (speckle[i] - 0.5));
-    data.data.set([value, value, value, 255], i * 4);
+  for (let p = 0; p < PLANKS_ACROSS; p++) {
+    const x0 = p * plankWidth;
+    // Knots: some strips have none, a few have a cluster.
+    const knots = Math.floor(random() * random() * 5);
+    inStrip(ctx, x0, plankWidth, height, () => {
+      for (let k = 0; k < knots; k++) {
+        const r = 2.5 + random() * random() * 12;
+        drawKnot(ctx, x0 + 18 + random() * (plankWidth - 36), random() * height, r, random);
+      }
+    });
+
+    // Scratches, mostly along the direction people walk; a few across.
+    const scratches = 22 + Math.floor(random() * 30);
+    for (let s = 0; s < scratches; s++) {
+      const x = x0 + random() * plankWidth;
+      const y = random() * height;
+      const length = 12 + random() * random() * 220;
+      const angle = (random() - 0.5) * (random() < 0.8 ? 0.4 : Math.PI);
+      const bend = (random() - 0.5) * length * 0.15;
+      const ex = x + Math.sin(angle) * length;
+      const ey = y + Math.cos(angle) * length;
+      const light = random() < 0.7;
+      const alpha = 0.05 + random() * 0.16;
+      const lineWidth = 0.4 + random() * 1.1;
+      const stroke = (target, style, scale = 1) => {
+        inStrip(target, x0 * scale, plankWidth * scale, height * scale, () => {
+          target.strokeStyle = style;
+          target.lineWidth = lineWidth * scale;
+          target.beginPath();
+          target.moveTo(x * scale, y * scale);
+          target.quadraticCurveTo(((x + ex) / 2 + bend) * scale, ((y + ey) / 2) * scale, ex * scale, ey * scale);
+          target.stroke();
+        });
+      };
+      stroke(ctx, light ? `rgba(214, 190, 160, ${alpha})` : `rgba(20, 10, 4, ${alpha * 1.4})`);
+      stroke(bctx, `rgba(0, 0, 0, ${alpha * 1.5})`);
+      stroke(rctx, `rgba(255, 255, 255, ${alpha * 2})`, 0.5); // the finish is cut: duller
+    }
   }
-  roughness.getContext('2d').putImageData(data, 0, 0);
-  return roughness;
+  return rough;
 }
 
 /**
- * Worn oak floorboards running along the canvas's vertical axis, with staggered end joints.
- * @returns {{ map: THREE.Texture, bumpMap: THREE.Texture, roughnessMap: THREE.Texture }}
+ * One tile of worn oak boards: eight independent strips, each with an end joint
+ * at the tile edge and about half with one more somewhere along it, so any strip can follow any
+ * other along a run of boards. The floor material shuffles them (floor-material.js).
+ * @returns {{ map: THREE.Texture, bumpMap: THREE.Texture, roughnessMap: THREE.Texture, joints: number[] }}
+ *   `joints[i]` is where strip i's second board starts, as a texture v coordinate
  */
 export function createPlankFloor(maxAnisotropy = 1) {
   const width = 1024;
@@ -173,32 +191,32 @@ export function createPlankFloor(maxAnisotropy = 1) {
 
   const random = seededRandom(20261121);
   const plankWidth = width / PLANKS_ACROSS;
+  const joints = [];
   for (let p = 0; p < PLANKS_ACROSS; p++) {
     const x = p * plankWidth;
-    // Two end joints per strip make two boards; the second wraps around the tile edge.
-    const first = Math.floor(random() * height * 0.45);
-    const second = first + Math.floor(height * (0.35 + random() * 0.3));
-    const seedA = 1000 + p * 2;
-    const seedB = 1001 + p * 2;
-    drawBoard(ctx, { x, y: first, width: plankWidth, height: second - first }, height, seedA);
-    drawBoard(ctx, { x, y: second, width: plankWidth, height: height - second }, height, seedB);
-    drawBoard(ctx, { x, y: 0, width: plankWidth, height: first }, height, seedB);
+    // About half the strips are one full-length board; the rest are two shorter ones.
+    const joint = random() < 0.5 ? 0 : Math.floor(height * (0.35 + random() * 0.3));
+    if (joint) drawBoard(ctx, { x, y: 0, width: plankWidth, height: joint }, height, 1000 + p * 2);
+    drawBoard(ctx, { x, y: joint, width: plankWidth, height: height - joint }, height, 1001 + p * 2);
+    joints.push(joint ? 1 - joint / height : 0); // canvas rows run down, texture v runs up
 
     for (const target of [ctx, bctx]) {
       target.fillStyle = target === ctx ? 'rgba(14, 8, 3, 0.85)' : '#000000';
-      target.fillRect(x - 1.5, 0, 3.5, height); // gap between strips
-      target.fillRect(x, first - 1, plankWidth, 2.5); // end joints
-      target.fillRect(x, second - 1, plankWidth, 2.5);
+      target.fillRect(x, 0, 1.75, height); // half the gap on each side of the strip
+      target.fillRect(x + plankWidth - 1.75, 0, 1.75, height);
+      target.fillRect(x, 0, plankWidth, 1.25); // end joints: at both tile edges and one between
+      target.fillRect(x, height - 1.25, plankWidth, 1.25);
+      if (joint) target.fillRect(x, joint - 1, plankWidth, 2.5);
     }
   }
 
-  const roughnessMap = repeating(wearFloor(ctx, bctx, width, height, random), THREE.NoColorSpace);
+  const roughnessMap = repeating(markBoards(ctx, bctx, width, height, plankWidth, random), THREE.NoColorSpace);
   const map = repeating(color, THREE.SRGBColorSpace);
   const bumpMap = repeating(bump, THREE.NoColorSpace);
   for (const texture of [map, bumpMap, roughnessMap]) {
     texture.anisotropy = maxAnisotropy; // the floor is always seen at a grazing angle
   }
-  return { map, bumpMap, roughnessMap };
+  return { map, bumpMap, roughnessMap, joints };
 }
 
 /**
