@@ -2,6 +2,7 @@
   "name": "smk-sculpture-gallery",
   "private": true,
   "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "assets": "node scripts/build-assets.mjs",

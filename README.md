@@ -8,7 +8,8 @@ A virtual sculpture gallery you can walk through in the browser, built from the
 you can stroll around them in first person, watch a scripted drone tour, or
 render that tour to an MP4.
 
-An experiment by Christian Dalager on top of SMK Open.
+An experiment by Christian Dalager on top of SMK Open. It is an independent
+project, not affiliated with or endorsed by Statens Museum for Kunst.
 
 ## Quick start
 
@@ -22,7 +23,9 @@ npm run dev      # start the viewer; also reachable from other devices on the LA
 ```
 
 The converted models are not checked in, so `npm run assets` has to run once
-before the viewer shows anything.
+before the viewer shows anything. Expect it to take a while: SMK's server drops
+connections every few megabytes, and the downloader resumes each scan until it
+is complete.
 
 | Command | What it does |
 |---|---|
@@ -51,8 +54,12 @@ before the viewer shows anything.
   you are looking at.
 - **Skylights** over every room, and lighting built around them: soft light from
   above with shadows at the foot of each piece.
-- **Worn plank floor and plaster walls**, drawn in code at start-up; there are no
-  image files.
+- **A worn oak floor that never repeats.** Each board gets its own grain, length
+  and tone, and the wear follows the floor plan: bare tracks down the aisle,
+  through the doorways and in front of each piece, with polish and grime left
+  along the walls.
+- **Plaster walls** in each room's colour. Floor and walls are drawn in code at
+  start-up; there are no image files.
 - **Detail on demand.** Every sculpture exists at three levels of detail. Only
   the coarsest loads at start (3.9 MB for all thirty); finer ones load as you
   approach.
@@ -173,7 +180,7 @@ Plain JavaScript modules throughout; no UI framework.
 config/sculptures.json   rooms, sculptures and detail levels
 scripts/                 the asset pipeline and its resumable downloader
 src/lib/                 pure logic, no DOM or three.js: STL parsing, mesh maths,
-                         floor plan, collision, noise, tour paths
+                         floor plan, collision, noise, floor wear, tour paths
 src/                     the viewer: rooms, skylights, textures, signage,
                          sculptures, walking, plaques, tours, recording
 tests/                   unit tests for everything in src/lib
@@ -199,3 +206,9 @@ The sculptures, scans and catalogue data come from SMK Open. The pipeline record
 each object's rights statement, and all thirty pieces in the default selection are
 marked public domain by SMK. Plaques link back to each object's page on
 [open.smk.dk](https://open.smk.dk/).
+
+## Licence
+
+The code is released under the [MIT licence](LICENSE). The sculptures, scans and
+catalogue data are not part of that licence; they come from SMK Open under the
+rights SMK states for each object.
