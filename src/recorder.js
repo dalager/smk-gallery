@@ -16,7 +16,12 @@ const CODECS = ['avc', 'vp9', 'av1'];
  */
 export async function recordVideo({ canvas, duration, fps, drawFrame, onProgress, isCancelled }) {
   if (typeof VideoEncoder === 'undefined') {
-    throw new Error('This browser cannot encode video. Try a current Chrome or Edge.');
+    // Browsers only offer WebCodecs on secure pages: https:// or localhost.
+    throw new Error(
+      window.isSecureContext
+        ? 'This browser cannot encode video. Try a current Chrome or Edge.'
+        : 'Recording needs a secure page. Open the gallery via https:// or http://localhost.',
+    );
   }
   // Loaded on demand: most visitors never record, so they should not download the encoder.
   const { BufferTarget, CanvasSource, Mp4OutputFormat, Output, Quality, getFirstEncodableVideoCodec } =
